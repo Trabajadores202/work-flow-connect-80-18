@@ -1,5 +1,6 @@
 
 
+
 -- Users Table
 CREATE TABLE IF NOT EXISTS "Users" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,52 +61,56 @@ CREATE TABLE IF NOT EXISTS "Messages" (
   "userId" UUID REFERENCES "Users"(id) ON DELETE SET NULL
 );
 
--- Drop existing tables if they exist to recreate them properly
+-- First, drop all tables that depend on Jobs table
 DROP TABLE IF EXISTS "JobLikes" CASCADE;
 DROP TABLE IF EXISTS "SavedJobs" CASCADE;
 DROP TABLE IF EXISTS "Replies" CASCADE;
 DROP TABLE IF EXISTS "Comments" CASCADE;
+
+-- Drop the Jobs table completely
 DROP TABLE IF EXISTS "Jobs" CASCADE;
 
--- Drop enum type if it exists
+-- Drop any existing ENUM types
 DROP TYPE IF EXISTS job_status CASCADE;
+DROP TYPE IF EXISTS enum_Jobs_status CASCADE;
 
--- Jobs Table with TEXT status and CHECK constraint
-CREATE TABLE IF NOT EXISTS "Jobs" (
+-- Jobs Table with simple TEXT status column
+CREATE TABLE "Jobs" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(255) NOT NULL,
   description TEXT NOT NULL,
   budget FLOAT NOT NULL,
   category VARCHAR(255) NOT NULL,
   skills VARCHAR(255)[] DEFAULT ARRAY[]::VARCHAR(255)[],
-  status TEXT DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'completed', 'closed')),
+  status VARCHAR(50) DEFAULT 'open',
   "userId" UUID NOT NULL REFERENCES "Users"(id) ON UPDATE CASCADE,
   "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT valid_status CHECK (status IN ('open', 'in_progress', 'completed', 'closed'))
 );
 
 -- Comments Table
-CREATE TABLE IF NOT EXISTS "Comments" (
+CREATE TABLE "Comments" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   content TEXT NOT NULL,
-  "jobId" UUID NOT NULL REFERENCES "Jobs"(id) ON UPDATE CASCADE,
+  "jobId" UUID NOT NULL REFERENCES "Jobs"(id) ON UPDATE CASCADE ON DELETE CASCADE,
   "userId" UUID NOT NULL REFERENCES "Users"(id) ON UPDATE CASCADE,
   "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Replies Table
-CREATE TABLE IF NOT EXISTS "Replies" (
+CREATE TABLE "Replies" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   content TEXT NOT NULL,
   "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   "userId" UUID REFERENCES "Users"(id) ON UPDATE CASCADE ON DELETE SET NULL,
-  "commentId" UUID REFERENCES "Comments"(id) ON UPDATE CASCADE ON DELETE SET NULL
+  "commentId" UUID REFERENCES "Comments"(id) ON UPDATE CASCADE ON DELETE CASCADE
 );
 
 -- Job Likes Table
-CREATE TABLE IF NOT EXISTS "JobLikes" (
+CREATE TABLE "JobLikes" (
   "JobId" UUID REFERENCES "Jobs"(id) ON UPDATE CASCADE ON DELETE CASCADE,
   "UserId" UUID REFERENCES "Users"(id) ON UPDATE CASCADE ON DELETE CASCADE,
   "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -114,7 +119,7 @@ CREATE TABLE IF NOT EXISTS "JobLikes" (
 );
 
 -- Saved Jobs Table
-CREATE TABLE IF NOT EXISTS "SavedJobs" (
+CREATE TABLE "SavedJobs" (
   "JobId" UUID REFERENCES "Jobs"(id) ON UPDATE CASCADE ON DELETE CASCADE,
   "UserId" UUID REFERENCES "Users"(id) ON UPDATE CASCADE ON DELETE CASCADE,
   "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
