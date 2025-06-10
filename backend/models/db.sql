@@ -1,4 +1,5 @@
 
+
 -- Users Table
 CREATE TABLE IF NOT EXISTS "Users" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -59,7 +60,21 @@ CREATE TABLE IF NOT EXISTS "Messages" (
   "userId" UUID REFERENCES "Users"(id) ON DELETE SET NULL
 );
 
--- Jobs Table
+-- Create ENUM type for job status if it doesn't exist
+DO $$ BEGIN
+    CREATE TYPE job_status AS ENUM ('open', 'in_progress', 'completed', 'closed');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
+
+-- Drop existing Jobs table to recreate it with proper ENUM
+DROP TABLE IF EXISTS "JobLikes" CASCADE;
+DROP TABLE IF EXISTS "SavedJobs" CASCADE;
+DROP TABLE IF EXISTS "Replies" CASCADE;
+DROP TABLE IF EXISTS "Comments" CASCADE;
+DROP TABLE IF EXISTS "Jobs" CASCADE;
+
+-- Jobs Table with proper ENUM
 CREATE TABLE IF NOT EXISTS "Jobs" (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title VARCHAR(255) NOT NULL,
@@ -67,7 +82,7 @@ CREATE TABLE IF NOT EXISTS "Jobs" (
   budget FLOAT NOT NULL,
   category VARCHAR(255) NOT NULL,
   skills VARCHAR(255)[] DEFAULT ARRAY[]::VARCHAR(255)[],
-  status VARCHAR(50) DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'completed', 'closed')),
+  status job_status DEFAULT 'open',
   "userId" UUID NOT NULL REFERENCES "Users"(id) ON UPDATE CASCADE,
   "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -110,3 +125,4 @@ CREATE TABLE IF NOT EXISTS "SavedJobs" (
   "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY ("JobId", "UserId")
 );
+
