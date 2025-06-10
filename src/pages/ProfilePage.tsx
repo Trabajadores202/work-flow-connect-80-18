@@ -677,5 +677,3 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
-
-</edits_to_apply>

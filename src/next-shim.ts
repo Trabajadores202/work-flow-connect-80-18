@@ -1,4 +1,5 @@
 
+
 // This file provides compatibility shims for Next.js APIs that don't exist in Vite/React
 
 // Mock useTheme hook for next-themes compatibility
@@ -66,3 +67,4 @@ export default {
   usePathname,
   Link
 };
+
