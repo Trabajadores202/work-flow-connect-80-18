@@ -542,7 +542,10 @@ const JobDetail = () => {
                       <h3 className="font-medium mb-2">Habilidades requeridas</h3>
                       <div className="flex flex-wrap gap-2">
                         {job.skills.map((skill, index) => (
-                          <Badge key={index} variant="outline" className="bg-gray-50">
+                          <Badge 
+                            key={index} 
+                            className="bg-wfc-purple text-white hover:bg-wfc-purple-medium px-3 py-1 text-sm font-medium border-0"
+                          >
                             {skill}
                           </Badge>
                         ))}
@@ -682,3 +685,5 @@ const JobDetail = () => {
 };
 
 export default JobDetail;
+
+}
