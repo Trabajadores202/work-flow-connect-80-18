@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +28,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import EditJobForm from '@/components/EditJobForm';
+import axios from 'axios';
 
 const ProfilePage = () => {
   const { currentUser, updateUserProfile, uploadProfilePhoto } = useAuth();
@@ -44,6 +44,7 @@ const ProfilePage = () => {
   const [editingJob, setEditingJob] = useState<JobType | null>(null);
   const [isSubmittingJob, setIsSubmittingJob] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isLoadingSavedJobs, setIsLoadingSavedJobs] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -69,23 +70,42 @@ const ProfilePage = () => {
     if (Array.isArray(jobs)) {
       setUserJobs(jobs.filter(job => job.userId === currentUser?.id));
     }
-    
+  }, [jobs, currentUser]);
+  
+  // Load saved jobs when component mounts
+  useEffect(() => {
     const loadSavedJobs = async () => {
-      if (currentUser) {
-        try {
-          // Si tienes una función para obtener trabajos guardados, úsala
-          // const saved = await getSavedJobs(currentUser.id);
-          // Mientras tanto, usamos un array vacío o simulamos datos
-          const saved: JobType[] = [];
-          setSavedJobs(saved);
-        } catch (error) {
-          console.error('Error loading saved jobs:', error);
+      if (!currentUser) return;
+      
+      setIsLoadingSavedJobs(true);
+      try {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+        const response = await axios.get(
+          `${API_URL}/jobs/user/saved`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }
+        );
+        
+        if (response.data.success) {
+          setSavedJobs(response.data.jobs || []);
         }
+      } catch (error) {
+        console.error('Error loading saved jobs:', error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "No se pudieron cargar las propuestas guardadas"
+        });
+      } finally {
+        setIsLoadingSavedJobs(false);
       }
     };
     
     loadSavedJobs();
-  }, [jobs, currentUser]);
+  }, [currentUser]);
   
   const handleEditJob = (job: JobType) => {
     setEditingJob(job);
@@ -236,8 +256,8 @@ const ProfilePage = () => {
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit',
@@ -394,7 +414,7 @@ const ProfilePage = () => {
                     
                     <div className="space-y-2 w-full">
                       <Button 
-                        variant="fileUpload" 
+                        variant="outline" 
                         className="w-full dark:bg-gray-800 dark:border-gray-700 dark:text-white dark:hover:bg-wfc-purple dark:hover:text-white" 
                         type="button"
                         onClick={triggerFileInput}
@@ -495,7 +515,7 @@ const ProfilePage = () => {
                                 </Link>
                               </h3>
                               <p className="text-sm text-gray-500 dark:text-gray-400">
-                                Publicado el {job.timestamp ? formatDate(job.timestamp) : "-"} • {job.comments?.length || 0} comentarios
+                                Publicado el {job.createdAt ? formatDate(job.createdAt) : "-"} • {job.comments?.length || 0} comentarios
                               </p>
                             </div>
                             <div className="mt-2 md:mt-0">
@@ -571,7 +591,11 @@ const ProfilePage = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {savedJobs.length === 0 ? (
+                {isLoadingSavedJobs ? (
+                  <div className="text-center py-6">
+                    <p className="text-gray-500 dark:text-gray-400">Cargando propuestas guardadas...</p>
+                  </div>
+                ) : savedJobs.length === 0 ? (
                   <div className="text-center py-6">
                     <p className="text-gray-500 dark:text-gray-400">Aún no has guardado ninguna propuesta</p>
                     <Button 
@@ -583,7 +607,70 @@ const ProfilePage = () => {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {/* Contenido de trabajos guardados */}
+                    {savedJobs.map((job) => (
+                      <div 
+                        key={job.id} 
+                        className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:border-wfc-purple dark:hover:border-wfc-purple"
+                      >
+                        <div className="flex flex-col md:flex-row justify-between">
+                          <div>
+                            <h3 className="font-medium dark:text-white">
+                              <Link to={`/jobs/${job.id}`} className="hover:text-wfc-purple">
+                                {job.title}
+                              </Link>
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                              Por {job.userName || 'Usuario'} • Presupuesto: ${job.budget}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
+                              {job.description}
+                            </p>
+                          </div>
+                          <div className="mt-2 md:mt-0 flex flex-col items-end">
+                            <Badge className={`
+                              ${job.status === 'open' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 
+                                job.status === 'in progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 
+                                'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}
+                            `}>
+                              {job.status === 'open' ? 'Abierto' : 
+                                job.status === 'in progress' ? 'En progreso' : 
+                                'Completado'}
+                            </Badge>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              Guardado el {job.savedAt ? formatDate(job.savedAt) : formatDate(job.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {job.skills && job.skills.length > 0 && (
+                          <div className="mt-3">
+                            <div className="flex flex-wrap gap-1">
+                              {job.skills.slice(0, 3).map((skill, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {skill}
+                                </Badge>
+                              ))}
+                              {job.skills.length > 3 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{job.skills.length - 3} más
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <div className="flex mt-4 space-x-3">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => window.location.href = `/jobs/${job.id}`}
+                            className="text-wfc-purple border-wfc-purple hover:bg-wfc-purple hover:text-white"
+                          >
+                            Ver detalles
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </CardContent>

@@ -448,45 +448,6 @@ const JobDetail = () => {
             </div>
             
             <div className="flex items-center gap-2">
-              {/* Botones de like y guardar */}
-              {currentUser && job && currentUser.id !== job.userId && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleToggleLike}
-                    disabled={isTogglingLike}
-                    className={`flex items-center gap-2 ${
-                      isLiked 
-                        ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <Heart 
-                      className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} 
-                    />
-                    <span>{likesCount}</span>
-                  </Button>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleToggleSave}
-                    disabled={isTogglingSave}
-                    className={`flex items-center gap-2 ${
-                      isSaved 
-                        ? 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100' 
-                        : 'hover:bg-gray-50'
-                    }`}
-                  >
-                    <Bookmark 
-                      className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} 
-                    />
-                    <span>{savesCount}</span>
-                  </Button>
-                </>
-              )}
-              
               {/* Badge que muestra el estado de la propuesta */}
               <Badge className={`
                 ${job?.status === 'open' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 
@@ -498,6 +459,69 @@ const JobDetail = () => {
                  'Completado'}
               </Badge>
             </div>
+          </div>
+
+          {/* Mostrar estadísticas de la propuesta: likes y guardados */}
+          <div className="flex items-center gap-6 py-4 bg-gray-50 dark:bg-gray-800 rounded-lg px-4">
+            <div className="flex items-center gap-2">
+              <Heart className="h-5 w-5 text-red-500" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {likesCount} {likesCount === 1 ? 'Me gusta' : 'Me gusta'}
+              </span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <Bookmark className="h-5 w-5 text-blue-500" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {savesCount} {savesCount === 1 ? 'Guardado' : 'Guardados'}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-green-500" />
+              <span className="font-medium text-gray-700 dark:text-gray-300">
+                {comments.length} {comments.length === 1 ? 'Comentario' : 'Comentarios'}
+              </span>
+            </div>
+
+            {/* Botones de like y guardar */}
+            {currentUser && job && currentUser.id !== job.userId && (
+              <div className="flex items-center gap-2 ml-auto">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleLike}
+                  disabled={isTogglingLike}
+                  className={`flex items-center gap-2 ${
+                    isLiked 
+                      ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <Heart 
+                    className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} 
+                  />
+                  {isLiked ? 'Quitar like' : 'Me gusta'}
+                </Button>
+                
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleToggleSave}
+                  disabled={isTogglingSave}
+                  className={`flex items-center gap-2 ${
+                    isSaved 
+                      ? 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100' 
+                      : 'hover:bg-gray-50'
+                  }`}
+                >
+                  <Bookmark 
+                    className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} 
+                  />
+                  {isSaved ? 'Guardado' : 'Guardar'}
+                </Button>
+              </div>
+            )}
           </div>
           
           {/* Layout principal con contenido y sidebar */}
