@@ -193,11 +193,11 @@ const jobController = {
       }
       
       // Validate status if provided
-      const validStatuses = ['open', 'in progress', 'completed', 'closed'];
+      const validStatuses = ['open', 'in_progress', 'completed', 'closed'];
       if (status && !validStatuses.includes(status)) {
         return res.status(400).json({
           success: false,
-          message: 'Invalid status. Valid statuses are: open, in progress, completed, closed'
+          message: 'Invalid status. Valid statuses are: open, in_progress, completed, closed'
         });
       }
       

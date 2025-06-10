@@ -34,7 +34,7 @@ const EditJobForm = ({ job, onSubmit, onCancel, isSubmitting }: EditJobFormProps
   // Estados disponibles para las propuestas
   const jobStatuses = [
     { value: 'open', label: 'Abierto' },
-    { value: 'in progress', label: 'En progreso' },
+    { value: 'in_progress', label: 'En progreso' },
     { value: 'completed', label: 'Completado' },
     { value: 'closed', label: 'Cerrado' }
   ];
@@ -123,7 +123,7 @@ const EditJobForm = ({ job, onSubmit, onCancel, isSubmitting }: EditJobFormProps
         <Label htmlFor="status" className="dark:text-gray-200">Estado de la propuesta</Label>
         <Select 
           value={formData.status} 
-          onValueChange={(value: 'open' | 'in progress' | 'completed' | 'closed') => 
+          onValueChange={(value: 'open' | 'in_progress' | 'completed' | 'closed') => 
             setFormData({ ...formData, status: value })
           }
         >

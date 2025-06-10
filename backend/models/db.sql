@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS "Jobs" (
   budget FLOAT NOT NULL,
   category VARCHAR(255) NOT NULL,
   skills VARCHAR(255)[] DEFAULT ARRAY[]::VARCHAR(255)[],
-  status VARCHAR(50) DEFAULT 'open',
+  status VARCHAR(50) DEFAULT 'open' CHECK (status IN ('open', 'in_progress', 'completed', 'closed')),
   "userId" UUID NOT NULL REFERENCES "Users"(id) ON UPDATE CASCADE,
   "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
