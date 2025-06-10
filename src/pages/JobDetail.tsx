@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import { MessageCircle, Calendar, DollarSign, User } from 'lucide-react';
+import { MessageCircle, Calendar, DollarSign, User, Heart, Bookmark } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { JobType, CommentType } from '@/types';
 import { formatDate } from '@/lib/utils';
@@ -38,6 +38,14 @@ const JobDetail = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [comments, setComments] = useState<CommentType[]>([]);
+  
+  // Estados para like y guardar
+  const [isLiked, setIsLiked] = useState(false);
+  const [isSaved, setIsSaved] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [savesCount, setSavesCount] = useState(0);
+  const [isTogglingLike, setIsTogglingLike] = useState(false);
+  const [isTogglingSave, setIsTogglingSave] = useState(false);
   
   console.log("JobDetail: jobId =", jobId);
   console.log("JobDetail: jobs disponibles =", jobs?.length || 0);
@@ -74,6 +82,12 @@ const JobDetail = () => {
           }
           
           setJob(jobData);
+          
+          // Establecer estados de like y save
+          setIsLiked(jobData.isLiked || false);
+          setIsSaved(jobData.isSaved || false);
+          setLikesCount(jobData.likesCount || 0);
+          setSavesCount(jobData.savesCount || 0);
           
           // Si hay comentarios en la respuesta, cárguelos también
           if (jobData.comments) {
@@ -135,6 +149,86 @@ const JobDetail = () => {
 
   // Obtener información del propietario de la propuesta
   const jobOwner = job ? getUserById(job.userId) : undefined;
+  
+  /**
+   * Función para manejar el toggle de like
+   */
+  const handleToggleLike = async () => {
+    if (!currentUser || !job || isTogglingLike) return;
+    
+    setIsTogglingLike(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.post(
+        `${API_URL}/jobs/${job.id}/like`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      if (response.data.success) {
+        setIsLiked(response.data.isLiked);
+        setLikesCount(response.data.likesCount);
+        
+        toast({
+          title: response.data.isLiked ? "Like agregado" : "Like removido",
+          description: response.data.message
+        });
+      }
+    } catch (error) {
+      console.error("Error al toggle like:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el like"
+      });
+    } finally {
+      setIsTogglingLike(false);
+    }
+  };
+
+  /**
+   * Función para manejar el toggle de guardar
+   */
+  const handleToggleSave = async () => {
+    if (!currentUser || !job || isTogglingSave) return;
+    
+    setIsTogglingSave(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.post(
+        `${API_URL}/jobs/${job.id}/save`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
+      
+      if (response.data.success) {
+        setIsSaved(response.data.isSaved);
+        setSavesCount(response.data.savesCount);
+        
+        toast({
+          title: response.data.isSaved ? "Propuesta guardada" : "Propuesta removida",
+          description: response.data.message
+        });
+      }
+    } catch (error) {
+      console.error("Error al toggle save:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "No se pudo actualizar el guardado"
+      });
+    } finally {
+      setIsTogglingSave(false);
+    }
+  };
   
   // Si está cargando, mostrar un indicador de carga
   if (isLoading) {
@@ -354,6 +448,45 @@ const JobDetail = () => {
             </div>
             
             <div className="flex items-center gap-2">
+              {/* Botones de like y guardar */}
+              {currentUser && job && currentUser.id !== job.userId && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleToggleLike}
+                    disabled={isTogglingLike}
+                    className={`flex items-center gap-2 ${
+                      isLiked 
+                        ? 'bg-red-50 border-red-200 text-red-600 hover:bg-red-100' 
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <Heart 
+                      className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} 
+                    />
+                    <span>{likesCount}</span>
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleToggleSave}
+                    disabled={isTogglingSave}
+                    className={`flex items-center gap-2 ${
+                      isSaved 
+                        ? 'bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-100' 
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    <Bookmark 
+                      className={`h-4 w-4 ${isSaved ? 'fill-current' : ''}`} 
+                    />
+                    <span>{savesCount}</span>
+                  </Button>
+                </>
+              )}
+              
               {/* Badge que muestra el estado de la propuesta */}
               <Badge className={`
                 ${job?.status === 'open' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 

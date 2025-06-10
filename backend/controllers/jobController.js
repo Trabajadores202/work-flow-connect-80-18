@@ -1,4 +1,3 @@
-
 const jobModel = require('../models/jobModel');
 const userModel = require('../models/userModel');
 const db = require('../config/database'); // Añadimos la importación de la base de datos
@@ -125,10 +124,11 @@ const jobController = {
   async getJobById(req, res) {
     try {
       const { jobId } = req.params;
+      const userId = req.user.userId;
       
-      console.log(`Getting job by ID: ${jobId}`);
+      console.log(`Getting job by ID: ${jobId} for user: ${userId}`);
       
-      const job = await jobModel.findById(jobId);
+      const job = await jobModel.findById(jobId, userId);
       
       if (!job) {
         console.error(`Job with ID ${jobId} not found`);
@@ -266,6 +266,148 @@ const jobController = {
       return res.status(500).json({
         success: false,
         message: 'Error deleting job',
+        error: error.message
+      });
+    }
+  },
+  
+  // Toggle like status for a job
+  async toggleLike(req, res) {
+    try {
+      const { jobId } = req.params;
+      const userId = req.user.userId;
+      
+      // Check if job exists
+      const job = await jobModel.findById(jobId);
+      
+      if (!job) {
+        return res.status(404).json({
+          success: false,
+          message: 'Job not found'
+        });
+      }
+      
+      // Toggle like status
+      const result = await jobModel.toggleLike(jobId, userId);
+      
+      // Get updated counts
+      const updatedJob = await jobModel.findById(jobId, userId);
+      
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        isLiked: result.isLiked,
+        likesCount: updatedJob.likesCount
+      });
+      
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating like status',
+        error: error.message
+      });
+    }
+  },
+  
+  // Toggle save status for a job
+  async toggleSave(req, res) {
+    try {
+      const { jobId } = req.params;
+      const userId = req.user.userId;
+      
+      // Check if job exists
+      const job = await jobModel.findById(jobId);
+      
+      if (!job) {
+        return res.status(404).json({
+          success: false,
+          message: 'Job not found'
+        });
+      }
+      
+      // Toggle save status
+      const result = await jobModel.toggleSave(jobId, userId);
+      
+      // Get updated counts
+      const updatedJob = await jobModel.findById(jobId, userId);
+      
+      return res.status(200).json({
+        success: true,
+        message: result.message,
+        isSaved: result.isSaved,
+        savesCount: updatedJob.savesCount
+      });
+      
+    } catch (error) {
+      console.error('Error toggling save:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error updating save status',
+        error: error.message
+      });
+    }
+  },
+  
+  // Get user's saved jobs
+  async getUserSavedJobs(req, res) {
+    try {
+      const userId = req.user.userId;
+      
+      const savedJobs = await jobModel.getUserSavedJobs(userId);
+      
+      // Get user info for each job
+      const jobsWithUserInfo = await Promise.all(savedJobs.map(async (job) => {
+        const user = await userModel.findById(job.userId);
+        return {
+          ...job,
+          userName: user ? user.name : 'Usuario desconocido',
+          userPhoto: user ? user.avatar : null
+        };
+      }));
+      
+      return res.status(200).json({
+        success: true,
+        jobs: jobsWithUserInfo
+      });
+      
+    } catch (error) {
+      console.error('Error getting saved jobs:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error getting saved jobs',
+        error: error.message
+      });
+    }
+  },
+  
+  // Get user's liked jobs
+  async getUserLikedJobs(req, res) {
+    try {
+      const userId = req.user.userId;
+      
+      const likedJobs = await jobModel.getUserLikedJobs(userId);
+      
+      // Get user info for each job
+      const jobsWithUserInfo = await Promise.all(likedJobs.map(async (job) => {
+        const user = await userModel.findById(job.userId);
+        return {
+          ...job,
+          userName: user ? user.name : 'Usuario desconocido',
+          userPhoto: user ? user.avatar : null
+        };
+      }));
+      
+      return res.status(200).json({
+        success: true,
+        jobs: jobsWithUserInfo
+      });
+      
+    } catch (error) {
+      console.error('Error getting liked jobs:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error getting liked jobs',
         error: error.message
       });
     }

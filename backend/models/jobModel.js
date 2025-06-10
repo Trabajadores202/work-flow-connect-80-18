@@ -61,8 +61,8 @@ const jobModel = {
     return result.rows;
   },
   
-  // Find job by ID
-  async findById(jobId) {
+  // Find job by ID with like and save status for a specific user
+  async findById(jobId, userId = null) {
     const result = await db.query(
       `SELECT j.id, j.title, j.description, j.budget, j.category, j.skills, j.status, 
               j."userId", j."createdAt", j."updatedAt"
@@ -79,6 +79,37 @@ const jobModel = {
     
     // Get comments for this job
     job.comments = await jobModel.getComments(jobId);
+    
+    // If userId is provided, check if user has liked or saved this job
+    if (userId) {
+      // Check if user has liked this job
+      const likeResult = await db.query(
+        'SELECT COUNT(*) as count FROM "JobLikes" WHERE "JobId" = $1 AND "UserId" = $2',
+        [jobId, userId]
+      );
+      job.isLiked = parseInt(likeResult.rows[0].count) > 0;
+      
+      // Check if user has saved this job
+      const saveResult = await db.query(
+        'SELECT COUNT(*) as count FROM "SavedJobs" WHERE "JobId" = $1 AND "UserId" = $2',
+        [jobId, userId]
+      );
+      job.isSaved = parseInt(saveResult.rows[0].count) > 0;
+    }
+    
+    // Get total likes count
+    const likesCountResult = await db.query(
+      'SELECT COUNT(*) as count FROM "JobLikes" WHERE "JobId" = $1',
+      [jobId]
+    );
+    job.likesCount = parseInt(likesCountResult.rows[0].count);
+    
+    // Get total saves count
+    const savesCountResult = await db.query(
+      'SELECT COUNT(*) as count FROM "SavedJobs" WHERE "JobId" = $1',
+      [jobId]
+    );
+    job.savesCount = parseInt(savesCountResult.rows[0].count);
     
     return job;
   },
@@ -167,6 +198,14 @@ const jobModel = {
       // Delete all comments for this job
       console.log(`Deleting all comments for job ${jobId}`);
       await db.query('DELETE FROM "Comments" WHERE "jobId" = $1', [jobId]);
+      
+      // Delete all likes for this job
+      console.log(`Deleting all likes for job ${jobId}`);
+      await db.query('DELETE FROM "JobLikes" WHERE "JobId" = $1', [jobId]);
+      
+      // Delete all saves for this job
+      console.log(`Deleting all saves for job ${jobId}`);
+      await db.query('DELETE FROM "SavedJobs" WHERE "JobId" = $1', [jobId]);
       
       // Finally, delete the job itself
       console.log(`Deleting job ${jobId}`);
@@ -445,6 +484,108 @@ const jobModel = {
       return result.rows.length > 0 ? result.rows[0].commentId : null;
     } catch (error) {
       console.error('Error deleting reply:', error);
+      throw error;
+    }
+  },
+  
+  // Toggle like status for a job
+  async toggleLike(jobId, userId) {
+    try {
+      // Check if user has already liked this job
+      const existingLike = await db.query(
+        'SELECT * FROM "JobLikes" WHERE "JobId" = $1 AND "UserId" = $2',
+        [jobId, userId]
+      );
+      
+      const now = new Date();
+      
+      if (existingLike.rows.length > 0) {
+        // Unlike the job
+        await db.query(
+          'DELETE FROM "JobLikes" WHERE "JobId" = $1 AND "UserId" = $2',
+          [jobId, userId]
+        );
+        return { isLiked: false, message: 'Job unliked successfully' };
+      } else {
+        // Like the job
+        await db.query(
+          'INSERT INTO "JobLikes" ("JobId", "UserId", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4)',
+          [jobId, userId, now, now]
+        );
+        return { isLiked: true, message: 'Job liked successfully' };
+      }
+    } catch (error) {
+      console.error('Error toggling like:', error);
+      throw error;
+    }
+  },
+  
+  // Toggle save status for a job
+  async toggleSave(jobId, userId) {
+    try {
+      // Check if user has already saved this job
+      const existingSave = await db.query(
+        'SELECT * FROM "SavedJobs" WHERE "JobId" = $1 AND "UserId" = $2',
+        [jobId, userId]
+      );
+      
+      const now = new Date();
+      
+      if (existingSave.rows.length > 0) {
+        // Unsave the job
+        await db.query(
+          'DELETE FROM "SavedJobs" WHERE "JobId" = $1 AND "UserId" = $2',
+          [jobId, userId]
+        );
+        return { isSaved: false, message: 'Job removed from saved list' };
+      } else {
+        // Save the job
+        await db.query(
+          'INSERT INTO "SavedJobs" ("JobId", "UserId", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4)',
+          [jobId, userId, now, now]
+        );
+        return { isSaved: true, message: 'Job saved successfully' };
+      }
+    } catch (error) {
+      console.error('Error toggling save:', error);
+      throw error;
+    }
+  },
+  
+  // Get saved jobs for a user
+  async getUserSavedJobs(userId) {
+    try {
+      const result = await db.query(
+        `SELECT j.id, j.title, j.description, j.budget, j.category, j.skills, j.status, 
+                j."userId", j."createdAt", j."updatedAt", sj."createdAt" as "savedAt"
+         FROM "SavedJobs" sj
+         JOIN "Jobs" j ON sj."JobId" = j.id
+         WHERE sj."UserId" = $1
+         ORDER BY sj."createdAt" DESC`,
+        [userId]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('Error getting saved jobs:', error);
+      throw error;
+    }
+  },
+  
+  // Get liked jobs for a user
+  async getUserLikedJobs(userId) {
+    try {
+      const result = await db.query(
+        `SELECT j.id, j.title, j.description, j.budget, j.category, j.skills, j.status, 
+                j."userId", j."createdAt", j."updatedAt", jl."createdAt" as "likedAt"
+         FROM "JobLikes" jl
+         JOIN "Jobs" j ON jl."JobId" = j.id
+         WHERE jl."UserId" = $1
+         ORDER BY jl."createdAt" DESC`,
+        [userId]
+      );
+      return result.rows;
+    } catch (error) {
+      console.error('Error getting liked jobs:', error);
       throw error;
     }
   }

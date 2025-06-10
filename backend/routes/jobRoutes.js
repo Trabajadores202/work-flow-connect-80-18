@@ -24,6 +24,18 @@ router.put('/:jobId', jobController.updateJob);
 // Delete a job
 router.delete('/:jobId', jobController.deleteJob);
 
+// Like/Unlike a job
+router.post('/:jobId/like', jobController.toggleLike);
+
+// Save/Unsave a job
+router.post('/:jobId/save', jobController.toggleSave);
+
+// Get user's saved jobs
+router.get('/user/saved', jobController.getUserSavedJobs);
+
+// Get user's liked jobs
+router.get('/user/liked', jobController.getUserLikedJobs);
+
 // Add comment to a job
 router.post('/:jobId/comments', jobController.addComment);
 
@@ -43,6 +55,6 @@ router.put('/replies/:replyId', jobController.updateReply);
 router.delete('/replies/:replyId', jobController.deleteReply);
 
 // Add log to verify routes initialization
-console.log('Job routes initialized correctly with userId filter support, improved deletion handling, and comment management');
+console.log('Job routes initialized correctly with like and save functionality');
 
 module.exports = router;
