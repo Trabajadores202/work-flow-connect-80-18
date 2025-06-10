@@ -31,6 +31,14 @@ const EditJobForm = ({ job, onSubmit, onCancel, isSubmitting }: EditJobFormProps
 
   const [selectedSkill, setSelectedSkill] = useState('');
 
+  // Estados disponibles para las propuestas
+  const jobStatuses = [
+    { value: 'open', label: 'Abierto' },
+    { value: 'in progress', label: 'En progreso' },
+    { value: 'completed', label: 'Completado' },
+    { value: 'closed', label: 'Cerrado' }
+  ];
+
   const handleAddSkill = (skill: string) => {
     if (!skill || formData.skills.includes(skill)) return;
     setFormData({
@@ -112,10 +120,10 @@ const EditJobForm = ({ job, onSubmit, onCancel, isSubmitting }: EditJobFormProps
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="status" className="dark:text-gray-200">Estado</Label>
+        <Label htmlFor="status" className="dark:text-gray-200">Estado de la propuesta</Label>
         <Select 
           value={formData.status} 
-          onValueChange={(value: 'open' | 'in progress' | 'completed') => 
+          onValueChange={(value: 'open' | 'in progress' | 'completed' | 'closed') => 
             setFormData({ ...formData, status: value })
           }
         >
@@ -123,15 +131,15 @@ const EditJobForm = ({ job, onSubmit, onCancel, isSubmitting }: EditJobFormProps
             <SelectValue placeholder="Selecciona un estado" />
           </SelectTrigger>
           <SelectContent className="dark:bg-gray-800 dark:border-gray-700">
-            <SelectItem value="open" className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
-              Abierto
-            </SelectItem>
-            <SelectItem value="in progress" className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
-              En progreso
-            </SelectItem>
-            <SelectItem value="completed" className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700">
-              Completado
-            </SelectItem>
+            {jobStatuses.map((status) => (
+              <SelectItem 
+                key={status.value} 
+                value={status.value}
+                className="dark:text-white dark:focus:text-white dark:focus:bg-gray-700"
+              >
+                {status.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

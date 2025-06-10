@@ -67,7 +67,7 @@ export interface JobType {
   budget: number;
   category: string;
   skills: string[];
-  status: 'open' | 'in progress' | 'completed';
+  status: 'open' | 'in progress' | 'completed' | 'closed';
   userId: string;
   createdAt: string;
   updatedAt: string;

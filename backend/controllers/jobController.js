@@ -1,6 +1,7 @@
+
 const jobModel = require('../models/jobModel');
 const userModel = require('../models/userModel');
-const db = require('../config/database'); // Añadimos la importación de la base de datos
+const db = require('../config/database');
 
 const jobController = {
   // Create a new job
@@ -171,6 +172,8 @@ const jobController = {
       const { title, description, budget, category, skills, status } = req.body;
       const userId = req.user.userId;
       
+      console.log('Updating job with data:', { jobId, title, description, budget, category, skills, status, userId });
+      
       // Check if job exists
       const job = await jobModel.findById(jobId);
       
@@ -186,6 +189,15 @@ const jobController = {
         return res.status(403).json({
           success: false,
           message: 'You do not have permission to edit this job'
+        });
+      }
+      
+      // Validate status if provided
+      const validStatuses = ['open', 'in progress', 'completed', 'closed'];
+      if (status && !validStatuses.includes(status)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid status. Valid statuses are: open, in progress, completed, closed'
         });
       }
       
@@ -208,6 +220,8 @@ const jobController = {
         userName: user ? user.name : 'Usuario desconocido',
         userPhoto: user ? user.avatar : null
       };
+      
+      console.log('Job updated successfully:', jobWithUser);
       
       return res.status(200).json({
         success: true,
