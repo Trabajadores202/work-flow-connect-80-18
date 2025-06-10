@@ -5,6 +5,7 @@ import { useJobs } from '@/contexts/JobContext';
 import { useChat } from '@/contexts/ChatContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { Briefcase, MessageCircle, Timer, ArrowRight } from 'lucide-react';
 
@@ -134,9 +135,9 @@ const Dashboard = () => {
                       <p className="text-gray-700 text-sm line-clamp-2">{job.description}</p>
                       <div className="mt-3 flex flex-wrap gap-1">
                         {job.skills.slice(0, 3).map((skill, index) => (
-                          <span key={index} className="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded">
+                          <Badge key={index} className="bg-wfc-purple text-white hover:bg-wfc-purple-medium">
                             {skill}
-                          </span>
+                          </Badge>
                         ))}
                       </div>
                     </CardContent>
