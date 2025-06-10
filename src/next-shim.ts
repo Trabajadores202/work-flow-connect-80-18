@@ -1,80 +1,38 @@
 
-// This file provides compatibility shims for Next.js APIs that don't exist in Vite/React
+// This file provides Next.js-like functionality for Vite
+// It's a compatibility layer for components that expect Next.js APIs
 
-// Mock Image component for Next.js compatibility
-export const Image = ({ src, alt, width, height, className, ...props }: {
-  src: string;
-  alt: string;
-  width?: number;
-  height?: number;
-  className?: string;
-  [key: string]: any;
-}) => {
-  return (
-    <img 
-      src={src} 
-      alt={alt} 
-      width={width} 
-      height={height} 
-      className={className}
-      {...props}
-    />
-  );
-};
-
-// Mock Link component for Next.js compatibility
-export const Link = ({ href, children, className, ...props }: {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-  [key: string]: any;
-}) => {
-  return (
-    <a 
-      href={href} 
-      className={className}
-      {...props}
-    >
-      {children}
-    </a>
-  );
-};
-
-// Mock useRouter for Next.js compatibility
-export const useRouter = () => {
-  return {
-    push: (url: string) => {
-      window.location.href = url;
-    },
-    replace: (url: string) => {
-      window.location.replace(url);
-    },
-    back: () => {
-      window.history.back();
-    },
-    pathname: window.location.pathname,
-    query: {},
-    asPath: window.location.pathname + window.location.search
-  };
-};
-
-// Mock router object
-export const router = {
-  push: (url: string) => {
-    window.location.href = url;
-  },
-  replace: (url: string) => {
-    window.location.replace(url);
-  },
-  back: () => {
-    window.history.back();
+declare global {
+  interface Window {
+    __NEXT_DATA__: any;
   }
+}
+
+// Mock Next.js router for compatibility
+export const useRouter = () => ({
+  push: (url: string) => window.location.href = url,
+  replace: (url: string) => window.location.replace(url),
+  back: () => window.history.back(),
+  forward: () => window.history.forward(),
+  reload: () => window.location.reload(),
+  pathname: window.location.pathname,
+  query: {},
+  asPath: window.location.pathname + window.location.search,
+});
+
+// Mock Next.js Image component
+export const Image = ({ src, alt, ...props }: any) => {
+  return <img src={src} alt={alt} {...props} />;
 };
 
-// Export all mocks
-export default {
-  Image,
-  useRouter,
-  router,
-  Link
+// Mock Next.js Link component  
+export const Link = ({ href, children, ...props }: any) => {
+  return <a href={href} {...props}>{children}</a>;
 };
+
+// Mock Next.js Head component
+export const Head = ({ children }: any) => {
+  return null; // In a real app, you might want to use react-helmet
+};
+
+export default {};
