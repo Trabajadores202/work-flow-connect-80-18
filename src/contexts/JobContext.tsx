@@ -3,6 +3,7 @@ import { JobType, CommentType, ReplyType, UserType } from '@/types';
 import { jobService } from '@/lib/jobService';
 import { useAuth } from './AuthContext';
 import { useData } from './DataContext';
+import { toast } from '@/components/ui/use-toast';
 
 export interface JobContextType {
   jobs: JobType[];
