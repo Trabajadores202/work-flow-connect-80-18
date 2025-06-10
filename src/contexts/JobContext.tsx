@@ -1,9 +1,7 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
 import { JobType, CommentType, ReplyType, UserType } from '@/types';
 import { jobService } from '@/lib/jobService';
 import { useAuth } from './AuthContext';
-import { useToast } from '@/components/ui/use-toast';
 import { useData } from './DataContext';
 
 export interface JobContextType {
@@ -49,7 +47,6 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const { currentUser } = useAuth();
   const { getUserById } = useData();
-  const { toast } = useToast();
 
   useEffect(() => {
     refreshJobs();
@@ -114,20 +111,13 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
       // Refresh jobs after creating a new one
       await refreshJobs();
       
-      toast({
-        title: "Propuesta creada",
-        description: "La propuesta se ha creado correctamente."
-      });
+      // NO mostramos toast aquí - se debe manejar en el componente que llama esta función
       
       return createdJob;
     } catch (error) {
       console.error("Error creating job:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Error al crear la propuesta."
-      });
-      return null;
+      // Solo lanzamos el error para que el componente lo maneje
+      throw error;
     }
   };
 
@@ -150,15 +140,13 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
         );
       }
       
+      // NO mostramos toast aquí - se debe manejar en el componente que llama esta función
+      
       return updatedJob;
     } catch (error) {
       console.error("Error updating job:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Error al actualizar la propuesta."
-      });
-      return null;
+      // Solo lanzamos el error para que el componente lo maneje
+      throw error;
     }
   };
 
@@ -172,37 +160,17 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
         setUserJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
         setFilteredJobs(prevJobs => prevJobs.filter(job => job.id !== jobId));
         
-        toast({
-          title: "Propuesta eliminada",
-          description: "La propuesta se ha eliminado correctamente."
-        });
+        // NO mostramos toast aquí - se debe manejar en el componente que llama esta función
         
         return true;
       } else {
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "No se pudo eliminar la propuesta. Inténtalo de nuevo."
-        });
-        return false;
+        // Solo lanzamos el error para que el componente lo maneje
+        throw new Error("No se pudo eliminar la propuesta");
       }
     } catch (error: any) {
       console.error("Error deleting job:", error);
-      
-      let errorMessage = "Error al eliminar la propuesta.";
-      
-      // Si hay un mensaje más específico del error, lo usamos
-      if (error.response && error.response.data && error.response.data.message) {
-        errorMessage = error.response.data.message;
-      }
-      
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: errorMessage
-      });
-      
-      return false;
+      // Solo lanzamos el error para que el componente lo maneje
+      throw error;
     }
   };
 
@@ -573,3 +541,5 @@ export const JobProvider = ({ children }: { children: React.ReactNode }) => {
     </JobContext.Provider>
   );
 };
+
+export default JobContext;

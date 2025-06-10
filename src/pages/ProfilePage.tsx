@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { X, Camera, Edit, Trash2, AlertTriangle, Upload } from 'lucide-react';
 import { useJobs } from '@/contexts/JobContext';
 import { Link } from 'react-router-dom';
@@ -128,12 +128,10 @@ const ProfilePage = () => {
       
       setEditingJob(null);
       
-      toast({
-        title: "Propuesta actualizada",
-        description: "Los cambios han sido guardados correctamente"
-      });
+      // No mostramos toast aquí porque updateJob ya lo hace
     } catch (error) {
       console.error('Error updating job:', error);
+      // Solo mostramos toast de error
       toast({
         variant: "destructive",
         title: "Error",
@@ -154,13 +152,11 @@ const ProfilePage = () => {
         // pero actualizamos la lista local por si acaso
         setUserJobs(userJobs.filter(job => job.id !== jobId));
         
-        toast({
-          title: "Propuesta eliminada",
-          description: "La propuesta ha sido eliminada correctamente"
-        });
+        // No mostramos toast aquí porque deleteJob ya lo hace
       }
     } catch (error) {
       console.error('Error deleting job:', error);
+      // Solo mostramos toast de error
       toast({
         variant: "destructive",
         title: "Error",
@@ -180,11 +176,9 @@ const ProfilePage = () => {
         skills: profileForm.skills,
       });
       
-      toast({
-        title: "Perfil actualizado",
-        description: "Tus cambios han sido guardados correctamente"
-      });
+      // No mostramos toast aquí porque updateUserProfile ya lo hace
     } catch (error) {
+      // Solo mostramos toast de error si updateUserProfile no lo hace
       toast({
         variant: "destructive",
         title: "Error",
@@ -683,3 +677,5 @@ const ProfilePage = () => {
 };
 
 export default ProfilePage;
+
+</edits_to_apply>

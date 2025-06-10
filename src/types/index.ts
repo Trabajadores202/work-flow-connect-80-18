@@ -5,10 +5,18 @@ export interface UserType {
   email?: string;
   role: string;
   photoURL?: string;
-  joinedAt?: number;
+  joinedAt?: string;
+  createdAt?: string;
   status?: 'online' | 'offline';
   bio?: string;
   skills?: string[];
+  location?: string;
+}
+
+export interface AuthState {
+  user: UserType | null;
+  loading: boolean;
+  error: string | null;
 }
 
 export interface ChatType {
@@ -66,6 +74,7 @@ export interface JobType {
   userName?: string;
   userPhoto?: string;
   comments?: CommentType[];
+  savedAt?: string;
 }
 
 export interface CommentType {

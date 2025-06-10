@@ -1,4 +1,3 @@
-
 import MainLayout from '@/components/Layout/MainLayout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useJobs } from '@/contexts/JobContext';
@@ -16,9 +15,9 @@ const Dashboard = () => {
 
   // Filtrar propuestas recientes - usar createdAt en lugar de timestamp
   const recentJobs = [...jobs].sort((a, b) => {
-    const timestampA = new Date(a.createdAt || a.updatedAt || 0).getTime();
-    const timestampB = new Date(b.createdAt || b.updatedAt || 0).getTime();
-    return timestampB - timestampA;
+    const dateA = new Date(a.createdAt || a.updatedAt || 0);
+    const dateB = new Date(b.createdAt || b.updatedAt || 0);
+    return dateB.getTime() - dateA.getTime();
   }).slice(0, 3);
 
   // Filtrar chats con mensajes recientes
@@ -27,7 +26,7 @@ const Dashboard = () => {
     .sort((a, b) => {
       const timestampA = a.lastMessage?.timestamp || 0;
       const timestampB = b.lastMessage?.timestamp || 0;
-      return timestampB - timestampA;
+      return new Date(timestampB).getTime() - new Date(timestampA).getTime();
     })
     .slice(0, 3);
 
@@ -178,7 +177,7 @@ const Dashboard = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center">
                           <div className="h-10 w-10 rounded-full bg-wfc-purple/20 flex items-center justify-center text-wfc-purple font-semibold">
-                            {chat.isGroup ? chat.name.charAt(0) : currentUser?.id === chat.participants[0] ? 'U' : 'T'}
+                            {chat.isGroup ? chat.name?.charAt(0) : currentUser?.id === chat.participants[0] ? 'U' : 'T'}
                           </div>
                           <div className="ml-3">
                             <h3 className="font-medium">
