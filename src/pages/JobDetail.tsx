@@ -173,6 +173,7 @@ const JobDetail = () => {
         setIsLiked(response.data.isLiked);
         setLikesCount(response.data.likesCount);
         
+        // Only show toast once
         toast({
           title: response.data.isLiked ? "Like agregado" : "Like removido",
           description: response.data.message
@@ -213,6 +214,7 @@ const JobDetail = () => {
         setIsSaved(response.data.isSaved);
         setSavesCount(response.data.savesCount);
         
+        // Only show toast once
         toast({
           title: response.data.isSaved ? "Propuesta guardada" : "Propuesta removida",
           description: response.data.message
@@ -392,7 +394,7 @@ const JobDetail = () => {
     
     setIsSubmittingComment(true);
     try {
-      // Send the comment to the backend API
+      // Send the comment directly to the backend API
       const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       const response = await axios.post(
         `${API_URL}/jobs/${job.id}/comments`,
@@ -414,6 +416,7 @@ const JobDetail = () => {
         
         setCommentText(''); // Limpiar el campo de comentario
         
+        // Only show toast once
         toast({
           title: "Comentario enviado",
           description: "Tu comentario ha sido publicado correctamente"

@@ -32,7 +32,6 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
   const [isSubmittingReplyEdit, setIsSubmittingReplyEdit] = useState(false);
   
   const { currentUser } = useAuth();
-  const { addReplyToComment, updateComment, deleteComment, updateReply, deleteReply } = useJobs();
 
   // Inicializa las respuestas locales con las respuestas del comentario
   useEffect(() => {
@@ -53,44 +52,37 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
     
     setIsSubmittingReply(true);
     try {
-      if (currentUser) {
-        // Send the reply to the backend API
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-        const response = await axios.post(
-          `${API_URL}/jobs/${jobId}/comments/${comment.id}/replies`,
-          { content: replyContent },
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-            }
+      // Send the reply directly to the backend API without using context methods
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.post(
+        `${API_URL}/jobs/${jobId}/comments/${comment.id}/replies`,
+        { content: replyContent },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
           }
-        );
-        
-        console.log('Reply response:', response.data);
-        
-        if (response.data.success && response.data.reply) {
-          // Format the reply to match the expected structure
-          const newReply: ReplyType = {
-            ...response.data.reply,
-            text: response.data.reply.content,
-            timestamp: new Date(response.data.reply.createdAt).getTime()
-          };
-          
-          // Update local state with the new reply
-          setLocalReplies(prev => [...prev, newReply]);
-          
-          // Add the reply to the comment in the global state
-          await addReplyToComment(jobId, comment.id, replyContent, currentUser);
-          
-          setReplyContent('');
-          setShowReplyForm(false);
-          toast({
-            title: "Respuesta enviada",
-            description: "Tu respuesta ha sido publicada correctamente"
-          });
-        } else {
-          throw new Error('Failed to send reply');
         }
+      );
+      
+      if (response.data.success && response.data.reply) {
+        // Format the reply to match the expected structure
+        const newReply: ReplyType = {
+          ...response.data.reply,
+          text: response.data.reply.content,
+          timestamp: new Date(response.data.reply.createdAt).getTime()
+        };
+        
+        // Update local state with the new reply
+        setLocalReplies(prev => [...prev, newReply]);
+        
+        setReplyContent('');
+        setShowReplyForm(false);
+        
+        // Only show toast once
+        toast({
+          title: "Respuesta enviada",
+          description: "Tu respuesta ha sido publicada correctamente"
+        });
       }
     } catch (error) {
       console.error('Error submitting reply:', error);
@@ -109,15 +101,26 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
     
     setIsSubmittingEdit(true);
     try {
-      // Actualizar el comentario en el backend
-      const updatedComment = await updateComment(comment.id, editContent);
+      // Update comment directly via API instead of using context
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.put(
+        `${API_URL}/jobs/comments/${comment.id}`,
+        { content: editContent },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
       
-      if (updatedComment) {
-        // Update local state with the edited comment
-        comment.text = updatedComment.content || updatedComment.text;
-        comment.content = updatedComment.content;
+      if (response.data.success) {
+        // Update local comment content
+        comment.text = response.data.comment.content;
+        comment.content = response.data.comment.content;
         
         setIsEditing(false);
+        
+        // Only show toast once
         toast({
           title: "Comentario actualizado",
           description: "Tu comentario ha sido actualizado correctamente"
@@ -137,13 +140,26 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
   
   const handleDeleteComment = async () => {
     try {
-      const success = await deleteComment(comment.id);
+      // Delete comment directly via API instead of using context
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.delete(
+        `${API_URL}/jobs/comments/${comment.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
       
-      if (success) {
+      if (response.data.success) {
+        // Only show toast once
         toast({
           title: "Comentario eliminado",
           description: "El comentario ha sido eliminado correctamente"
         });
+        
+        // Optionally trigger a page refresh or parent component update
+        window.location.reload();
       }
     } catch (error) {
       console.error('Error deleting comment:', error);
@@ -160,20 +176,31 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
     
     setIsSubmittingReplyEdit(true);
     try {
-      // Actualizar la respuesta en el backend
-      const updatedReply = await updateReply(replyId, editReplyContent);
+      // Update reply directly via API
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.put(
+        `${API_URL}/jobs/replies/${replyId}`,
+        { content: editReplyContent },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
       
-      if (updatedReply) {
+      if (response.data.success) {
         // Update local replies with the edited reply
         setLocalReplies(prev => 
           prev.map(reply => 
             reply.id === replyId 
-              ? { ...reply, text: updatedReply.content || updatedReply.text, content: updatedReply.content } 
+              ? { ...reply, text: response.data.reply.content, content: response.data.reply.content } 
               : reply
           )
         );
         
         setEditingReplyId(null);
+        
+        // Only show toast once
         toast({
           title: "Respuesta actualizada",
           description: "Tu respuesta ha sido actualizada correctamente"
@@ -193,12 +220,22 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment, jobId }) => {
   
   const handleDeleteReply = async (replyId: string) => {
     try {
-      const success = await deleteReply(replyId);
+      // Delete reply directly via API
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+      const response = await axios.delete(
+        `${API_URL}/jobs/replies/${replyId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        }
+      );
       
-      if (success) {
+      if (response.data.success) {
         // Remove the deleted reply from local state
         setLocalReplies(prev => prev.filter(reply => reply.id !== replyId));
         
+        // Only show toast once
         toast({
           title: "Respuesta eliminada",
           description: "La respuesta ha sido eliminada correctamente"

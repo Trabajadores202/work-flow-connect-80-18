@@ -14,8 +14,12 @@ const Dashboard = () => {
   const { jobs, loading: loadingJobs } = useJobs();
   const { chats, loadingChats } = useChat();
 
-  // Filtrar propuestas recientes
-  const recentJobs = [...jobs].sort((a, b) => b.timestamp - a.timestamp).slice(0, 3);
+  // Filtrar propuestas recientes - usar createdAt en lugar de timestamp
+  const recentJobs = [...jobs].sort((a, b) => {
+    const timestampA = new Date(a.createdAt || a.updatedAt || 0).getTime();
+    const timestampB = new Date(b.createdAt || b.updatedAt || 0).getTime();
+    return timestampB - timestampA;
+  }).slice(0, 3);
 
   // Filtrar chats con mensajes recientes
   const recentChats = [...chats]
@@ -27,8 +31,8 @@ const Dashboard = () => {
     })
     .slice(0, 3);
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
+  const formatDate = (dateInput: string | number | Date) => {
+    const date = new Date(dateInput);
     return date.toLocaleDateString('es-ES', {
       day: '2-digit',
       month: '2-digit', 
@@ -123,11 +127,11 @@ const Dashboard = () => {
                         <div>
                           <CardTitle className="text-lg font-medium">{job.title}</CardTitle>
                           <CardDescription className="text-sm">
-                            Publicado por {job.userName} • {formatDate(job.timestamp)}
+                            Publicado por {job.userName} • {formatDate(job.createdAt || job.updatedAt || new Date())}
                           </CardDescription>
                         </div>
                         <div className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-                          {job.status === 'open' ? 'Abierto' : job.status === 'in-progress' ? 'En progreso' : 'Completado'}
+                          {job.status === 'open' ? 'Abierto' : job.status === 'in progress' ? 'En progreso' : 'Completado'}
                         </div>
                       </div>
                     </CardHeader>
