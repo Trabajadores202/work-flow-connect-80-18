@@ -18,7 +18,27 @@ const userModel = {
       [username, email, hashedPassword, avatar || null, true, 'client', bio || null, skills ? JSON.stringify(skills) : null]
     );
     
-    return result.rows[0];
+    const user = result.rows[0];
+    
+    // Parse skills back to array format
+    if (user && user.skills && typeof user.skills === 'string') {
+      try {
+        user.skills = JSON.parse(user.skills);
+      } catch (e) {
+        user.skills = [];
+      }
+    }
+    
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      photoURL: user.photoURL,
+      bio: user.bio,
+      skills: user.skills || [],
+      role: user.role,
+      createdAt: user.createdAt
+    };
   },
   
   // Find user by email
@@ -30,7 +50,7 @@ const userModel = {
   // Find user by ID
   async findById(id) {
     const result = await db.query(
-      'SELECT id, name, email, "photoURL" as avatar, "isOnline" as status, "lastSeen", "createdAt", bio, skills FROM "Users" WHERE id = $1',
+      'SELECT id, name, email, "photoURL", "isOnline" as status, "lastSeen", "createdAt", bio, skills, role FROM "Users" WHERE id = $1',
       [id]
     );
     
@@ -44,20 +64,37 @@ const userModel = {
       }
     }
     
-    return user;
+    // Return in consistent format
+    if (user) {
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        photoURL: user.photoURL,
+        bio: user.bio,
+        skills: user.skills || [],
+        status: user.status,
+        lastSeen: user.lastSeen,
+        createdAt: user.createdAt,
+        joinedAt: user.createdAt, // Alias for compatibility
+        role: user.role
+      };
+    }
+    
+    return null;
   },
   
   // Get all users except the one with the given ID
   async findAllExcept(userId) {
     const result = await db.query(
-      'SELECT id, name, email, "photoURL" as avatar, "isOnline" as status, "lastSeen", "createdAt", bio, skills FROM "Users" WHERE id != $1',
+      'SELECT id, name, email, "photoURL", "isOnline" as status, "lastSeen", "createdAt", bio, skills, role FROM "Users" WHERE id != $1',
       [userId]
     );
     
     const users = result.rows;
     
-    // Parse skills for each user
-    users.forEach(user => {
+    // Parse skills for each user and format consistently
+    return users.map(user => {
       if (user.skills && typeof user.skills === 'string') {
         try {
           user.skills = JSON.parse(user.skills);
@@ -65,9 +102,21 @@ const userModel = {
           user.skills = [];
         }
       }
+      
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        photoURL: user.photoURL,
+        bio: user.bio,
+        skills: user.skills || [],
+        status: user.status,
+        lastSeen: user.lastSeen,
+        createdAt: user.createdAt,
+        joinedAt: user.createdAt, // Alias for compatibility
+        role: user.role
+      };
     });
-    
-    return users;
   },
   
   // Update user status
@@ -92,7 +141,7 @@ const userModel = {
     }
     
     const result = await db.query(
-      'UPDATE "Users" SET name = COALESCE($1, name), "photoURL" = COALESCE($2, "photoURL"), bio = COALESCE($3, bio), skills = COALESCE($4, skills), "updatedAt" = CURRENT_TIMESTAMP WHERE id = $5 RETURNING id, name, email, "photoURL" as avatar, "isOnline" as status, bio, skills',
+      'UPDATE "Users" SET name = COALESCE($1, name), "photoURL" = COALESCE($2, "photoURL"), bio = COALESCE($3, bio), skills = COALESCE($4, skills), "updatedAt" = CURRENT_TIMESTAMP WHERE id = $5 RETURNING id, name, email, "photoURL", "isOnline" as status, bio, skills, role, "createdAt"',
       [username, avatar, bio, skillsArray, userId]
     );
     
@@ -107,7 +156,18 @@ const userModel = {
       }
     }
     
-    return user;
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      photoURL: user.photoURL,
+      bio: user.bio,
+      skills: user.skills || [],
+      status: user.status,
+      createdAt: user.createdAt,
+      joinedAt: user.createdAt,
+      role: user.role
+    };
   }
 };
 

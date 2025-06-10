@@ -15,7 +15,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { formatDate } from '@/lib/utils';
 import { UserType, JobType } from '@/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import axios from 'axios';
+import { userService } from '@/services/api';
 
 /**
  * Componente de Página de Perfil de Usuario
@@ -45,80 +45,65 @@ const UserProfile = () => {
   const [profileUser, setProfileUser] = useState<UserType | null>(null);
   const [userJobs, setUserJobs] = useState<JobType[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Efecto para cargar datos del usuario y sus propuestas
   useEffect(() => {
     const fetchProfileUser = async () => {
+      console.log("UserProfile: Iniciando carga de usuario con ID:", userId);
       setIsLoading(true);
-      if (userId) {
-        try {
-          // Si el userId es el mismo que el usuario actual, usamos los datos del usuario actual
-          if (currentUser && userId === currentUser.id) {
-            console.log("UserProfile: Mostrando perfil del usuario actual:", currentUser);
-            setProfileUser(currentUser);
-          } else {
-            // Cargar el usuario directamente desde el backend en lugar de usar la caché
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            const response = await axios.get(
-              `${API_URL}/users/${userId}`,
-              {
-                headers: {
-                  Authorization: `Bearer ${localStorage.getItem('token')}`
-                }
-              }
-            );
-            
-            if (response.data.success && response.data.user) {
-              const user = response.data.user;
-              console.log("UserProfile: Usuario cargado desde el backend:", user);
-              setProfileUser(user);
-            } else {
-              console.log("UserProfile: Usuario no encontrado en el backend");
-              setProfileUser(null);
-            }
-          }
-          
-          // Cargar trabajos del usuario
-          if (jobs && jobs.length > 0) {
-            const jobsByUser = jobs.filter(job => job.userId === userId);
-            console.log("UserProfile: Propuestas del usuario:", jobsByUser);
-            setUserJobs(jobsByUser);
-          } else {
-            // Opcionalmente, cargar trabajos directamente desde el backend
-            const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-            try {
-              const jobsResponse = await axios.get(
-                `${API_URL}/jobs?userId=${userId}`,
-                {
-                  headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`
-                  }
-                }
-              );
-              
-              if (jobsResponse.data.success && jobsResponse.data.jobs) {
-                console.log("UserProfile: Propuestas cargadas desde el backend:", jobsResponse.data.jobs);
-                setUserJobs(jobsResponse.data.jobs);
-              } else {
-                console.log("UserProfile: No hay propuestas disponibles");
-                setUserJobs([]);
-              }
-            } catch (jobError) {
-              console.error("Error al cargar propuestas del usuario:", jobError);
-              setUserJobs([]);
-            }
-          }
-        } catch (error) {
-          console.error("Error al cargar datos del perfil:", error);
-          toast({
-            variant: "destructive",
-            title: "Error",
-            description: "No se pudieron cargar los datos del usuario"
-          });
-          setProfileUser(null);
-        }
+      setError(null);
+      
+      if (!userId) {
+        setError("ID de usuario no válido");
+        setIsLoading(false);
+        return;
       }
-      setIsLoading(false);
+      
+      try {
+        // Si el userId es el mismo que el usuario actual, usamos los datos del usuario actual
+        if (currentUser && userId === currentUser.id) {
+          console.log("UserProfile: Mostrando perfil del usuario actual:", currentUser);
+          setProfileUser(currentUser);
+        } else {
+          // Cargar el usuario directamente desde el backend
+          console.log("UserProfile: Cargando usuario desde el backend con ID:", userId);
+          try {
+            const user = await userService.getUserById(userId);
+            console.log("UserProfile: Usuario cargado exitosamente:", user);
+            setProfileUser(user);
+          } catch (apiError: any) {
+            console.error("UserProfile: Error al cargar usuario desde API:", apiError);
+            
+            // Intentar con el contexto como fallback
+            const contextUser = getUserById(userId);
+            if (contextUser) {
+              console.log("UserProfile: Usuario encontrado en contexto:", contextUser);
+              setProfileUser(contextUser);
+            } else {
+              throw apiError;
+            }
+          }
+        }
+        
+        // Cargar trabajos del usuario
+        if (jobs && jobs.length > 0) {
+          const jobsByUser = jobs.filter(job => job.userId === userId);
+          console.log("UserProfile: Propuestas del usuario:", jobsByUser);
+          setUserJobs(jobsByUser);
+        }
+      } catch (error: any) {
+        console.error("UserProfile: Error final al cargar datos del perfil:", error);
+        setError(error.message || "No se pudieron cargar los datos del usuario");
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: error.message || "No se pudieron cargar los datos del usuario"
+        });
+        setProfileUser(null);
+      } finally {
+        setIsLoading(false);
+      }
     };
     
     fetchProfileUser();
@@ -199,12 +184,15 @@ const UserProfile = () => {
   }
 
   // Mostrar mensaje si no se encuentra el usuario
-  if (!profileUser) {
+  if (error || !profileUser) {
     return (
       <MainLayout>
         <div className="text-center py-12">
-          <h2 className="text-xl font-semibold">Usuario no encontrado</h2>
-          <p className="text-gray-600 mt-2">El usuario que estás buscando no existe o ha sido eliminado.</p>
+          <User className="h-16 w-16 mx-auto text-gray-400 mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Usuario no encontrado</h2>
+          <p className="text-gray-600 mb-4">
+            {error || "El usuario que estás buscando no existe o ha sido eliminado."}
+          </p>
           <Button className="mt-4" onClick={() => navigate('/dashboard')}>
             Volver al inicio
           </Button>
@@ -284,10 +272,10 @@ const UserProfile = () => {
                   <div>
                     <h4 className="text-sm text-gray-600 mb-1">Miembro desde</h4>
                     <p>
-                      {profileUser.joinedAt ? (
+                      {profileUser.joinedAt || profileUser.createdAt ? (
                         <span className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
-                          {formatDate(new Date(profileUser.joinedAt))}
+                          {formatDate(new Date(profileUser.joinedAt || profileUser.createdAt))}
                         </span>
                       ) : (
                         "Fecha no disponible"

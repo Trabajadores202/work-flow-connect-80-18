@@ -3,7 +3,7 @@ import { UserType, JobType, ChatType, MessageType, FileType } from '@/types';
 
 // Configurando la instancia de axios
 const api = axios.create({
-  baseURL: 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
 });
 
 // Interceptor para agregar token de autorización
@@ -22,17 +22,26 @@ api.interceptors.request.use(
 export const userService = {
   async getUsers(): Promise<UserType[]> {
     const response = await api.get('/users');
-    return response.data;
+    if (response.data.success) {
+      return response.data.users;
+    }
+    throw new Error(response.data.message || 'Error getting users');
   },
 
   async getUserById(userId: string): Promise<UserType> {
     const response = await api.get(`/users/${userId}`);
-    return response.data;
+    if (response.data.success) {
+      return response.data.user;
+    }
+    throw new Error(response.data.message || 'User not found');
   },
 
   async updateUserProfile(userId: string, userData: Partial<UserType>): Promise<UserType> {
     const response = await api.put(`/users/${userId}`, userData);
-    return response.data;
+    if (response.data.success) {
+      return response.data.user;
+    }
+    throw new Error(response.data.message || 'Error updating profile');
   }
 };
 
@@ -229,21 +238,30 @@ export const fileService = {
 export const authService = {
   async login(email: string, password: string): Promise<{ user: UserType; token: string }> {
     const response = await api.post('/auth/login', { email, password });
-    return response.data;
+    if (response.data.success) {
+      return response.data;
+    }
+    throw new Error(response.data.message || 'Login failed');
   },
   
   async register(userData: {
     email: string;
     password: string;
-    name: string;
+    username: string;
     role?: string;
   }): Promise<{ user: UserType; token: string }> {
     const response = await api.post('/auth/register', userData);
-    return response.data;
+    if (response.data.success) {
+      return response.data;
+    }
+    throw new Error(response.data.message || 'Registration failed');
   },
   
   async verifyToken(): Promise<UserType> {
     const response = await api.get('/auth/verify');
-    return response.data;
+    if (response.data.success) {
+      return response.data.user;
+    }
+    throw new Error(response.data.message || 'Token verification failed');
   }
 };

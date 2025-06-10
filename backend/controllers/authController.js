@@ -14,7 +14,7 @@ const authController = {
       // Check if email or username exists
       const existingUser = await userModel.findByEmail(email);
       if (existingUser) {
-        return res.status(400).json({ message: 'Email already registered' });
+        return res.status(400).json({ success: false, message: 'Email already registered' });
       }
       
       // Create user
@@ -33,12 +33,13 @@ const authController = {
       );
       
       res.status(201).json({
+        success: true,
         user: newUser,
         token
       });
     } catch (error) {
       console.error('Error registering user:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ success: false, message: 'Server error' });
     }
   },
   
@@ -50,13 +51,13 @@ const authController = {
       // Check if user exists
       const user = await userModel.findByEmail(email);
       if (!user) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
       }
       
       // Verify password
       const isPasswordValid = await bcrypt.compare(password, user.password);
       if (!isPasswordValid) {
-        return res.status(401).json({ message: 'Invalid credentials' });
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
       }
       
       // Update user status to online
@@ -69,16 +70,27 @@ const authController = {
         { expiresIn: process.env.JWT_EXPIRES_IN }
       );
       
-      // Don't return password
+      // Don't return password and format user data correctly
       const { password: pass, ...userWithoutPassword } = user;
+      const formattedUser = {
+        id: userWithoutPassword.id,
+        name: userWithoutPassword.name,
+        email: userWithoutPassword.email,
+        photoURL: userWithoutPassword.photoURL,
+        bio: userWithoutPassword.bio,
+        skills: userWithoutPassword.skills,
+        role: userWithoutPassword.role,
+        createdAt: userWithoutPassword.createdAt
+      };
       
       res.json({
-        user: userWithoutPassword,
+        success: true,
+        user: formattedUser,
         token
       });
     } catch (error) {
       console.error('Error logging in:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ success: false, message: 'Server error' });
     }
   },
   
@@ -88,13 +100,13 @@ const authController = {
       const user = await userModel.findById(req.user.userId);
       
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
       
-      res.json({ user });
+      res.json({ success: true, user });
     } catch (error) {
       console.error('Error verifying token:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ success: false, message: 'Server error' });
     }
   }
 };

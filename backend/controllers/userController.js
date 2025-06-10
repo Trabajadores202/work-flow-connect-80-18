@@ -6,10 +6,10 @@ const userController = {
   async getAllUsers(req, res) {
     try {
       const users = await userModel.findAllExcept(req.user.userId);
-      res.json(users);
+      res.json({ success: true, users });
     } catch (error) {
       console.error('Error getting users:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ success: false, message: 'Server error' });
     }
   },
   
@@ -19,13 +19,13 @@ const userController = {
       const user = await userModel.findById(req.params.userId);
       
       if (!user) {
-        return res.status(404).json({ message: 'User not found' });
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
       
-      res.json(user);
+      res.json({ success: true, user });
     } catch (error) {
       console.error('Error getting user:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ success: false, message: 'Server error' });
     }
   },
   
@@ -41,10 +41,10 @@ const userController = {
         skills
       });
       
-      res.json(updatedUser);
+      res.json({ success: true, user: updatedUser });
     } catch (error) {
       console.error('Error updating profile:', error);
-      res.status(500).json({ message: 'Server error' });
+      res.status(500).json({ success: false, message: 'Server error' });
     }
   }
 };
