@@ -1,4 +1,3 @@
-
 const db = require('../config/database');
 const { v4: uuidv4 } = require('uuid');
 
@@ -13,7 +12,7 @@ const messageModel = {
     // Get current timestamp for createdAt and updatedAt
     const now = new Date();
     
-    console.log(`Creating message: chatId=${chatId}, senderId=${senderId}, text=${text}`);
+    console.log(`Creating message: chatId=${chatId}, senderId=${senderId}, text=${text}, fileId=${fileId}`);
     
     try {
       // Verificar si existen las columnas necesarias
@@ -72,9 +71,12 @@ const messageModel = {
   async findByChatId(chatId, searchText = null) {
     try {
       let query = `
-        SELECT m.*, m."userId" as "senderId", u.name as "senderName", u."photoURL" as "senderPhoto" 
+        SELECT m.*, m."userId" as "senderId", u.name as "senderName", u."photoURL" as "senderPhoto",
+               f.id as "file_id", f.filename as "file_filename", f.content_type as "file_content_type", 
+               f.size as "file_size", f.uploaded_by as "file_uploaded_by"
         FROM "Messages" m 
         LEFT JOIN "Users" u ON m."userId" = u.id 
+        LEFT JOIN "Files" f ON m."fileId" = f.id
         WHERE m."chatId" = $1
       `;
       
@@ -89,19 +91,31 @@ const messageModel = {
       
       const result = await db.query(query, params);
       
-      // Nos aseguramos de que cada mensaje tenga un senderId explícito para la coherencia en la interfaz
+      // Formatear los mensajes incluyendo información del archivo si existe
       return result.rows.map(row => {
-        // Verificar si existe la propiedad deleted y edited, si no existe asumimos false
         const deleted = typeof row.deleted !== 'undefined' ? row.deleted : false;
         const edited = typeof row.edited !== 'undefined' ? row.edited : false;
         
-        return {
+        const message = {
           ...row,
           senderId: row.userId || row.senderId,
-          timestamp: row.createdAt, // Añadimos timestamp para compatibilidad con el frontend
+          timestamp: row.createdAt,
           deleted: deleted,
           edited: edited
         };
+        
+        // Si el mensaje tiene un archivo, incluir la información completa
+        if (row.file_id) {
+          message.file = {
+            id: row.file_id,
+            filename: row.file_filename,
+            contentType: row.file_content_type,
+            size: row.file_size,
+            uploadedBy: row.file_uploaded_by
+          };
+        }
+        
+        return message;
       });
     } catch (error) {
       console.error("Error al obtener mensajes:", error);

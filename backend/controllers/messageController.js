@@ -1,4 +1,3 @@
-
 const messageModel = require('../models/messageModel');
 const chatModel = require('../models/chatModel');
 const fileModel = require('../models/fileModel');
@@ -9,23 +8,42 @@ const messageController = {
     try {
       const { chatId } = req.params;
       const { search } = req.query;
-      
-      // Check if user is a participant
-      const isParticipant = await chatModel.isParticipant(chatId, req.user.userId);
+      const userId = req.user.userId;
+
+      // Check if user is participant
+      const isParticipant = await chatModel.isParticipant(chatId, userId);
       if (!isParticipant) {
         return res.status(403).json({ message: 'You are not a participant in this chat' });
       }
-      
-      // Get messages, with optional search filter
+
+      // Get messages
       const messages = await messageModel.findByChatId(chatId, search);
       
-      // Mark messages as read
-      await messageModel.markAsRead(chatId, req.user.userId);
-      
-      // Log message info for debugging
-      console.log(`Retrieved ${messages.length} messages for chat ${chatId}. User ID: ${req.user.userId}${search ? `, Search: "${search}"` : ''}`);
-      
-      res.json(messages);
+      // For each message that has a fileId, get the complete file information
+      const messagesWithFiles = await Promise.all(messages.map(async (message) => {
+        if (message.fileId) {
+          try {
+            const file = await fileModel.findById(message.fileId);
+            if (file) {
+              return {
+                ...message,
+                file: {
+                  id: file.id,
+                  filename: file.filename,
+                  contentType: file.content_type,
+                  size: file.size,
+                  uploadedBy: file.uploaded_by
+                }
+              };
+            }
+          } catch (error) {
+            console.error('Error getting file info for message:', error);
+          }
+        }
+        return message;
+      }));
+
+      res.json(messagesWithFiles);
     } catch (error) {
       console.error('Error getting messages:', error);
       res.status(500).json({ message: 'Server error' });
