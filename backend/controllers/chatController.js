@@ -1,4 +1,3 @@
-
 const chatModel = require('../models/chatModel');
 const userModel = require('../models/userModel');
 const messageModel = require('../models/messageModel');
@@ -16,20 +15,8 @@ const chatController = {
       const formattedChats = [];
       
       for (const chat of chats) {
-        // Get participants
-        const participants = await chatModel.getParticipants(chat.id);
-        
-        // Format chat data
-        const formattedChat = {
-          id: chat.id,
-          name: chat.name,
-          isGroup: chat.isGroup,
-          lastMessageAt: chat.lastMessageAt,
-          createdAt: chat.createdAt,
-          updatedAt: chat.updatedAt,
-          participants: participants.map(p => p.id),
-          participantDetails: participants
-        };
+        // Use the formatChatWithParticipants method to get the correct name
+        const formattedChat = await chatModel.formatChatWithParticipants(chat, userId);
         
         // Get last message
         const lastMessage = await messageModel.getLastMessage(chat.id);
@@ -72,14 +59,14 @@ const chatController = {
         return res.status(404).json({ message: 'User not found' });
       }
       
-      // Create or get private chat with the other user's name
-      const chat = await chatModel.createPrivateChat(currentUserId, otherUserId, otherUser.name);
+      // Create or get private chat (now without passing the other user's name)
+      const chat = await chatModel.createPrivateChat(currentUserId, otherUserId);
       
       if (!chat) {
         return res.status(500).json({ message: 'Failed to create chat' });
       }
       
-      // Format chat for response
+      // Format chat for response with the correct name for the current user
       const formattedChat = await chatModel.formatChatWithParticipants(chat, currentUserId);
       console.log('Created private chat:', formattedChat);
       

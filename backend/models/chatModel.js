@@ -76,10 +76,10 @@ const chatModel = {
       return existingChat;
     }
     
-    // Create a new chat with the other user's name
-    console.log('Creating new private chat with name:', otherUserName);
+    // Create a new chat WITHOUT a specific name (we'll handle names dynamically)
+    console.log('Creating new private chat');
     const chat = await this.create({ 
-      name: otherUserName, 
+      name: '', // Empty name for private chats - will be determined dynamically
       isGroup: false 
     });
     
@@ -186,14 +186,19 @@ const chatModel = {
     // Get participant IDs
     const participantIds = participants.map(p => p.id);
     
-    // Find other user in private chats
+    // Find other user in private chats and determine the chat name
     let otherUser = null;
+    let chatName = chat.name;
+    
     if (!chat.isGroup) {
       otherUser = participants.find(p => p.id !== currentUserId);
+      // For private chats, the name should be the other user's name
+      chatName = otherUser ? otherUser.name : 'Usuario desconocido';
     }
     
     return {
       ...chat,
+      name: chatName, // Override the name with the correct one for this user
       participants: participantIds,
       otherUser,
       participantDetails: participants
