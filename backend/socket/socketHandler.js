@@ -1,4 +1,3 @@
-
 const userModel = require('../models/userModel');
 const chatModel = require('../models/chatModel');
 const messageModel = require('../models/messageModel');
@@ -47,15 +46,6 @@ const socketHandler = (io) => {
         }
         
         console.log(`Socket sendMessage: userId=${userId}, chatId=${chatId}, text=${text}`);
-        
-        // Crear objeto para llamar a la API con indicador de que es una solicitud de socket
-        const requestOptions = {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${socket.handshake.auth.token || ''}`,
-            'X-Socket-Request': 'true' // Marcar como solicitud de socket
-          }
-        };
         
         // Create message
         const message = await messageModel.create({
@@ -221,20 +211,25 @@ const socketHandler = (io) => {
         // Update last message in chat
         await chatModel.updateLastMessage(chatId);
         
-        // Message to send to clients (without binary data)
+        // Get sender information
+        const participants = await chatModel.getParticipants(chatId);
+        const sender = participants.find(user => user.id === userId);
+        
+        // Message to send to clients (with complete file information)
         const messageToSend = {
           ...message,
           senderId: userId, // Ensure senderId is explicitly set
+          senderName: sender ? sender.name : 'Unknown User',
+          senderPhoto: sender ? sender.photoURL : null,
+          timestamp: message.createdAt,
           file: {
             id: file.id,
-            filename,
-            contentType,
-            size
+            filename: filename, // Use the original filename
+            contentType: contentType, // Use the original contentType
+            size: size, // Use the original size
+            uploadedBy: userId
           }
         };
-        
-        // Get participants of the chat
-        const participants = await chatModel.getParticipants(chatId);
         
         // Send to all participants
         participants.forEach((participant) => {

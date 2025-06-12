@@ -1,4 +1,3 @@
-
 const fileModel = require('../models/fileModel');
 const chatModel = require('../models/chatModel');
 const messageModel = require('../models/messageModel');
@@ -57,22 +56,29 @@ const fileController = {
         // Update last message in chat
         await chatModel.updateLastMessage(chatId, message.id);
         
-        // Return message with file data (without the binary data)
+        // Get sender information
+        const participants = await chatModel.getParticipants(chatId);
+        const sender = participants.find(user => user.id === req.user.userId);
+        
+        // Return message with complete file data
         const messageWithFile = {
           ...message,
+          senderId: req.user.userId,
+          senderName: sender ? sender.name : 'Unknown User',
+          senderPhoto: sender ? sender.photoURL : null,
+          timestamp: message.createdAt,
           file: {
             id: file.id,
-            filename: file.filename,
-            contentType: file.content_type,
-            size: file.size,
-            uploadedBy: file.uploaded_by
+            filename: filename, // Use original filename from request
+            contentType: contentType, // Use original contentType from request
+            size: size, // Use original size from request
+            uploadedBy: req.user.userId
           }
         };
         
         // Get the socket service from the app to notify participants
         const socketService = req.app.get('socketService');
         if (socketService) {
-          const participants = await chatModel.getParticipants(chatId);
           const participantIds = participants.map(p => p.id);
           
           // Notify all participants about the file message
