@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,7 +14,6 @@ const Register = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [userRole, setUserRole] = useState('client');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
@@ -51,7 +49,8 @@ const Register = () => {
     
     try {
       setLoading(true);
-      await register(name, email, password, userRole);
+      // Siempre registrar como "client"
+      await register(name, email, password, 'client');
       // La redirección se maneja en el AuthContext tras el registro exitoso
     } catch (error) {
       console.error('Error de registro:', error);
@@ -134,25 +133,6 @@ const Register = () => {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                 />
-              </div>
-              
-              <div className="space-y-2">
-                <Label>Tipo de cuenta</Label>
-                <RadioGroup 
-                  defaultValue="client" 
-                  value={userRole} 
-                  onValueChange={setUserRole}
-                  className="flex space-x-4 mt-1"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="client" id="client" />
-                    <Label htmlFor="client">Cliente</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="freelancer" id="freelancer" />
-                    <Label htmlFor="freelancer">Freelancer</Label>
-                  </div>
-                </RadioGroup>
               </div>
             </CardContent>
             
